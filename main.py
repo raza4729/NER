@@ -16,7 +16,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# add path where you want to store the data from hugginface and models
+# Please safely remore the following path and add path where you want to store the data from hugginface and models
 path = "/mount/studenten/arbeitsdaten-studenten1/razaai/cache"
 
 # label mappings
