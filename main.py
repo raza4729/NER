@@ -1,6 +1,6 @@
 from datasets import load_dataset
 from rich.logging import RichHandler
-
+import logging
 
 # Rich Handler for colorized logging, you can safely remove it
 logging.basicConfig(
@@ -30,4 +30,6 @@ def load_model(*args):
 
 if __name__ == "__main__":
     data = load_data()
-    print(data)
+    logger.info(f"Train dataset size: {len(data['train'])}")
+    logger.info(f"Validation dataset size: {len(data['validation'])}")
+    logger.info(f"Test dataset size: {len(data['test'])}")
