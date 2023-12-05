@@ -26,8 +26,21 @@ mappings = {"O": 0, "B-PER": 1, "I-PER": 2, "B-ORG": 3, "I-ORG": 4, "B-LOC": 5, 
     "I-MYTH": 24, "B-PLANT": 25, "I-PLANT": 26, "B-TIME": 27, "I-TIME": 28, "B-VEHI": 29, "I-VEHI": 30,
 }
 
+# check for GPU
 device = 'cuda' if cuda.is_available() else 'cpu'
 logger.info(f"Device: {device}")
+
+# load model and tokenizer
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir=path)
+model = BertForTokenClassification.from_pretrained('bert-base-uncased', cache_dir=path)
+
+# define hyperparameters
+MAX_LEN = 128
+TRAIN_BATCH_SIZE = 8
+VALID_BATCH_SIZE = 4
+EPOCHS = 1
+LEARNING_RATE = 1e-05
+MAX_GRAD_NORM = 10
 
 def load_data(dataset_name=None):
     # A function that loads the data and returns its objects. 
@@ -84,11 +97,10 @@ def tokenize_and_preserve_labels(sentence, text_labels, tokenizer):
 
     return tokenized_sentence, labels
 
-def load_model(model_name):
+def load_tokenizer():
     # A funtion that loads the model & tokenizer from hugginface
     try:
-        tokenizer = BertTokenizer.from_pretrained(model_name)
-        model = ""
+        pass
     except Exception as e:
         print("failed to preprocess the data: %s" % (str(e)))
 
@@ -111,4 +123,5 @@ if __name__ == "__main__":
     # get to know data 
     data_statistics(data_train)
     logger.info(f"This is how a single training example looks like: {data_train[0] }")
-    # load model 
+    
+
