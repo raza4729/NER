@@ -1,8 +1,10 @@
 from datasets import load_dataset
-from transformers import AutoTokenizer
+from transformers import BertTokenizer, BertConfig, BertForTokenClassification
 from rich.logging import RichHandler
 import logging
 from collections import Counter
+from torch import cuda
+
 
 # Rich Handler for colorized logging, you can safely remove it
 logging.basicConfig(
@@ -23,6 +25,9 @@ mappings = {"O": 0, "B-PER": 1, "I-PER": 2, "B-ORG": 3, "I-ORG": 4, "B-LOC": 5, 
     "B-FOOD": 17, "I-FOOD": 18, "B-INST": 19, "I-INST": 20, "B-MEDIA": 21, "I-MEDIA": 22, "B-MYTH": 23,
     "I-MYTH": 24, "B-PLANT": 25, "I-PLANT": 26, "B-TIME": 27, "I-TIME": 28, "B-VEHI": 29, "I-VEHI": 30,
 }
+
+device = 'cuda' if cuda.is_available() else 'cpu'
+logger.info(f"Device: {device}")
 
 def load_data(dataset_name=None):
     # A function that loads the data and returns its objects. 
@@ -50,12 +55,39 @@ def data_statistics(data):
             index+=1
             ner_tags_lst.append(tag)
     logger.info(f"Representation of each tag in the dataset: {Counter(ner_tags_lst)}")
-    
+
+def tokenize_and_preserve_labels(sentence, text_labels, tokenizer):
+    """
+    Word piece tokenization makes it difficult to match word labels
+    back up with individual word pieces. This function tokenizes each
+    word one at a time so that it is easier to preserve the correct
+    label for each subword. It is, of course, a bit slower in processing
+    time, but it will help our model achieve higher accuracy.
+    """
+
+    tokenized_sentence = []
+    labels = []
+
+    sentence = sentence.strip()
+
+    for word, label in zip(sentence, text_labels):
+
+        # Tokenize the word and count # of subwords the word is broken into
+        tokenized_word = tokenizer.tokenize(word)
+        n_subwords = len(tokenized_word)
+
+        # Add the tokenized word to the final tokenized word list
+        tokenized_sentence.extend(tokenized_word)
+
+        # Add the same label to the new list of labels `n_subwords` times
+        labels.extend([label] * n_subwords)
+
+    return tokenized_sentence, labels
 
 def load_model(model_name):
     # A funtion that loads the model & tokenizer from hugginface
     try:
-        tokenizer = AutoTokenizer.from_pretrained("bert-base-multilingual-cased")
+        tokenizer = BertTokenizer.from_pretrained(model_name)
         model = ""
     except Exception as e:
         print("failed to preprocess the data: %s" % (str(e)))
@@ -78,5 +110,5 @@ if __name__ == "__main__":
 
     # get to know data 
     data_statistics(data_train)
-
+    logger.info(f"This is how a single training example looks like: {data_train[0] }")
     # load model 
