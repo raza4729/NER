@@ -1,5 +1,16 @@
 from datasets import load_dataset
+from rich.logging import RichHandler
 
+
+# Rich Handler for colorized logging, you can safely remove it
+logging.basicConfig(
+    level="INFO",
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)],
+)
+
+logger = logging.getLogger(__name__)
 
 
 def load_data():
@@ -11,6 +22,10 @@ def load_data():
 
 def preprcossing(*args):
     # A function that filters the data by remove non-English instances
+    pass
+
+def load_model(*args):
+    # A funtion that loads the model from hugginface
     pass
 
 if __name__ == "__main__":
