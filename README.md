@@ -13,3 +13,20 @@ The script in the main.py is used to finetune the models and could be resued in 
 3. ```python main.py --leaveOut 1/0```
 
 The `--leaveOut` arguemnt is intended to implement leave-out functionality for leaving out certain outcome labels which might lead to data imbalance or are considerend trivial depending on the requirments.
+
+## Remarks 
+
+The model that models all of the labels when evaluated solely using accuracy could be misleading due to class imbalance as in this case, the entities that are hyponyms would always be sparse as compared to general entities which is depicted by the accuracy of [Model A](https://huggingface.co/imrazaa/named-entity-recognition-distilbert-A) if we compare it with F1-score.
+
+
+
+### Citation 
+### Bibtex
+```
+@software{Ali_Raza,
+    author = {Raza, Ali},
+    license = { BSD-2-Clause license},
+    title = {{Named Entity Recognition using Multinerd}},
+    url = {https://github.com/raza4729/NER}
+}
+```
