@@ -1,15 +1,14 @@
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer
+from transformers import AutoTokenizer, AutoModelForTokenClassification, Trainer
 from rich.logging import RichHandler
 import logging
 from collections import Counter
 from torch import cuda
 import numpy as np
-import torch
-from torch.utils.data import Dataset, DataLoader
 import pdb
 from transformers import DataCollatorForTokenClassification
 import evaluate
+import config
 
 # Rich Handler for colorized logging, you can safely remove it
 logging.basicConfig(
@@ -37,8 +36,6 @@ device = 'cuda' if cuda.is_available() else 'cpu'
 logger.info(f"Device: {device}")
 
 # load model and tokenizer
-# tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir=path)
-# model = BertForTokenClassification.from_pretrained('bert-base-uncased', cache_dir=path)
 tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased', cache_dir=path)
 model = AutoModelForTokenClassification.from_pretrained(
     "bert-base-uncased", num_labels=31, id2label=id2label, label2id=label2id, cache_dir=path
@@ -123,11 +120,31 @@ def compute_metrics(p):
         "accuracy": results["overall_accuracy"],
     }
 
+def train(tokenized_train, tokenized_val):
+    # The function implements Trainer class from Hugginface for finetuning the model
+    trainer = Trainer(
+        model=model,
+        args=config.training_args,
+        train_dataset=tokenized_train,
+        eval_dataset=tokenized_val,
+        tokenizer=tokenizer,
+        data_collator=data_collator,
+        compute_metrics=compute_metrics,
+    )
+
+    trainer.train()
+    # push the model o huggingface
+    trainer.push_to_hub()
+
 if __name__ == "__main__":
     data = load_data()
     logger.info(f"Train dataset size: {len(data['train'])}")
     logger.info(f"Validation dataset size: {len(data['validation'])}")
     logger.info(f"Test dataset size: {len(data['test'])}")
+
+    # get the list of all labels
+    # label_lst = list(label2id.keys())
+    # labels = [label_lst[i] for i in data['train']["ner_tags"]]
 
     # preprocessing
     data_train = preprcossing(data['train'])
@@ -143,3 +160,18 @@ if __name__ == "__main__":
     data_statistics(data_train)
     logger.info(f"This is how a single training example looks like: {data_train[0]}")
 
+    # remove lang column as we dont need it anymore 
+    data_train =data_train.remove_columns("lang")
+    data_val =data_val.remove_columns("lang")
+    data_test =data_test.remove_columns("lang")
+
+    logger.info(f"Training Dataset Shape: {data_train.shape}")
+    logger.info(f"Validation Dataset Shape: {data_val.shape}")
+    logger.info(f"Test Dataset Shape: {data_test.shape}")
+
+    tokenized_train = data_train.map(tokenize_and_align_labels, batched=True)
+    tokenized_val = data_val.map(tokenize_and_align_labels, batched=True)
+    tokenized_test = data_test.map(tokenize_and_align_labels, batched=True)
+
+    finetuning script
+    train(tokenized_train, tokenized_val)
