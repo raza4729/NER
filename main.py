@@ -76,7 +76,7 @@ def data_statistics(data):
     # A funtion that provides statistics of NER tags e.g., representation of each class
     ner_tags_lst = []
     for lst in data['ner_tags']:
-        lst = sorted(lst, reverse=True)
+        lst = sorted(lst, reverse=True) # revere it to decrease time-complexity
         index = 0
         while lst[index] != 0:
             tag = next((key for key, label in label2id.items() if label == lst[index]), None)
@@ -107,7 +107,6 @@ def tokenize_and_align_labels(examples):
     
         if leave_out_labels:    # convert leave-out labels to Zero if set to 1
             label = turn_off_labels(label)  
-            pdb.set_trace()
     
         word_ids = tokenized_inputs.word_ids(batch_index=i)  # Map tokens to their respective word.
         # pdb.set_trace()
