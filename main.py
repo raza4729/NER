@@ -9,6 +9,7 @@ import pdb
 from transformers import DataCollatorForTokenClassification
 import evaluate
 import config
+from numpy import random
 
 # Rich Handler for colorized logging, you can safely remove it
 logging.basicConfig(
@@ -20,25 +21,32 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Please safely remore the following path and add path where you want to store the data from hugginface and models
-path = "/mount/studenten/arbeitsdaten-studenten1/razaai/cache"
-
 # label mappings
 label2id = {"O": 0, "B-PER": 1, "I-PER": 2, "B-ORG": 3, "I-ORG": 4, "B-LOC": 5, "I-LOC": 6, "B-ANIM": 7, "I-ANIM": 8,
     "B-BIO": 9, "I-BIO": 10, "B-CEL": 11, "I-CEL": 12, "B-DIS": 13, "I-DIS": 14, "B-EVE": 15, "I-EVE": 16,
     "B-FOOD": 17, "I-FOOD": 18, "B-INST": 19, "I-INST": 20, "B-MEDIA": 21, "I-MEDIA": 22, "B-MYTH": 23,
     "I-MYTH": 24, "B-PLANT": 25, "I-PLANT": 26, "B-TIME": 27, "I-TIME": 28, "B-VEHI": 29, "I-VEHI": 30,
 }
+
+# in order to convert leave-out labels to zero following list will be used as reference
+blocked_labels = {"B-BIO": 9, "I-BIO": 10, "B-CEL": 11, "I-CEL": 12, "B-EVE": 15, "I-EVE": 16,
+    "B-FOOD": 17, "I-FOOD": 18, "B-INST": 19, "I-INST": 20, "B-MEDIA": 21, "I-MEDIA": 22, "B-MYTH": 23,
+    "I-MYTH": 24, "B-PLANT": 25, "I-PLANT": 26, "B-TIME": 27, "I-TIME": 28, "B-VEHI": 29, "I-VEHI": 30,
+}
+
 id2label = {v: k for k, v in label2id.items()}
+
+# get the list of all labels
+label_list = list(label2id.keys())
 
 # check for GPU
 device = 'cuda' if cuda.is_available() else 'cpu'
 logger.info(f"Device: {device}")
 
 # load model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased', cache_dir=path)
+tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased', cache_dir=config.path)
 model = AutoModelForTokenClassification.from_pretrained(
-    "bert-base-uncased", num_labels=31, id2label=id2label, label2id=label2id, cache_dir=path
+    "distilbert-base-uncased", num_labels=len(label2id), id2label=id2label, label2id=label2id, cache_dir=config.path
 )
 
 # Define DataCollator
@@ -47,15 +55,12 @@ data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
 # load metric
 seqeval = evaluate.load("seqeval") 
 
-# define hyperparameters
-MAX_LEN = 128
-MAX_GRAD_NORM = 10
 
 def load_data(dataset_name=None):
     # A function that loads the data and returns its objects. 
     # Please add path in cache_dir where you want to store the dataset
     try:
-        return load_dataset("Babelscape/multinerd", cache_dir=path)
+        return load_dataset("Babelscape/multinerd", cache_dir=config.path)
     except Exception as e:
         print("failed to load the data: %s" % (str(e)))
 
@@ -78,12 +83,25 @@ def data_statistics(data):
             ner_tags_lst.append(tag)
     logger.info(f"Representation of each tag in the dataset: {Counter(ner_tags_lst)}")
 
+def turn_off_labels(labels=None):
+    # A function that converts leave-out labels to Zero
+    revised_labels = []
+    for label in labels:
+        if label in blocked_labels.values():
+            revised_labels.append(0)
+        else:
+            revised_labels.append(label)
+    return revised_labels
+
 def tokenize_and_align_labels(examples):
+    # A function to tokenize the data in order to be accepted by model
     tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True)
 
     labels = []
     for i, label in enumerate(examples[f"ner_tags"]):
+        label = turn_off_labels(label)  # convert leave-out labels to Zero
         word_ids = tokenized_inputs.word_ids(batch_index=i)  # Map tokens to their respective word.
+        # pdb.set_trace()
         previous_word_idx = None
         label_ids = []
         for word_idx in word_ids:  # Set the special tokens to -100.
@@ -95,7 +113,6 @@ def tokenize_and_align_labels(examples):
                 label_ids.append(-100)
             previous_word_idx = word_idx
         labels.append(label_ids)
-
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
 
@@ -142,11 +159,7 @@ if __name__ == "__main__":
     logger.info(f"Validation dataset size: {len(data['validation'])}")
     logger.info(f"Test dataset size: {len(data['test'])}")
 
-    # get the list of all labels
-    # label_lst = list(label2id.keys())
-    # labels = [label_lst[i] for i in data['train']["ner_tags"]]
-
-    # preprocessing
+    # preprocessing 
     data_train = preprcossing(data['train'])
     logger.info(f"Train dataset size after preprocessing: {data_train}")
 
@@ -160,6 +173,10 @@ if __name__ == "__main__":
     data_statistics(data_train)
     logger.info(f"This is how a single training example looks like: {data_train[0]}")
 
+    # Reduce dataset size for faster training
+    # x = random.randint(len(data_train), size=(50000))
+    # data_train = data_train.select(x)
+
     # remove lang column as we dont need it anymore 
     data_train =data_train.remove_columns("lang")
     data_val =data_val.remove_columns("lang")
@@ -171,7 +188,7 @@ if __name__ == "__main__":
 
     tokenized_train = data_train.map(tokenize_and_align_labels, batched=True)
     tokenized_val = data_val.map(tokenize_and_align_labels, batched=True)
-    tokenized_test = data_test.map(tokenize_and_align_labels, batched=True)
+    # tokenized_test = data_test.map(tokenize_and_align_labels, batched=True)
 
-    finetuning script
+    # finetuning script
     train(tokenized_train, tokenized_val)
