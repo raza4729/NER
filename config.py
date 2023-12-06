@@ -1,5 +1,7 @@
 from transformers import TrainingArguments
 
+# Please define the model here
+model = "distilbert-base-uncased"
 
 # Please safely remore the following path and add path where you want to store the data from hugginface and models
 path = "/mount/studenten/arbeitsdaten-studenten1/razaai/cache"

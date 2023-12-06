@@ -45,9 +45,9 @@ device = 'cuda' if cuda.is_available() else 'cpu'
 logger.info(f"Device: {device}")
 
 # load model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased', cache_dir=config.path)
+tokenizer = AutoTokenizer.from_pretrained(config.model, cache_dir=config.path)
 model = AutoModelForTokenClassification.from_pretrained(
-    "distilbert-base-uncased", num_labels=len(label2id), id2label=id2label, label2id=label2id, cache_dir=config.path
+    config.model, num_labels=len(label2id), id2label=id2label, label2id=label2id, cache_dir=config.path
 )
 
 # Define DataCollator
