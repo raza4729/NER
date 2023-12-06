@@ -161,3 +161,6 @@ cython_debug/
 
 # models
 named-entity-recognition-multinerd
+named-entity-recognition-distilbert
+named-entity-recognition-distilbert-A
+named-entity-recognition-distilbert-B
