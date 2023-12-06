@@ -10,6 +10,7 @@ from transformers import DataCollatorForTokenClassification
 import evaluate
 import config
 from numpy import random
+import argparse
 
 # Rich Handler for colorized logging, you can safely remove it
 logging.basicConfig(
@@ -95,11 +96,19 @@ def turn_off_labels(labels=None):
 
 def tokenize_and_align_labels(examples):
     # A function to tokenize the data in order to be accepted by model
+    # The code is taken from Hugginface and modified
+
+    # parse arguemnts
+    leave_out_labels = parse_args() # yes or no
     tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True)
 
     labels = []
     for i, label in enumerate(examples[f"ner_tags"]):
-        label = turn_off_labels(label)  # convert leave-out labels to Zero
+    
+        if leave_out_labels:    # convert leave-out labels to Zero if set to 1
+            label = turn_off_labels(label)  
+            pdb.set_trace()
+    
         word_ids = tokenized_inputs.word_ids(batch_index=i)  # Map tokens to their respective word.
         # pdb.set_trace()
         previous_word_idx = None
@@ -153,7 +162,15 @@ def train(tokenized_train, tokenized_val):
     # push the model o huggingface
     trainer.push_to_hub()
 
+def parse_args():
+    # takes command-line argument for leave-out labels 
+    parser = argparse.ArgumentParser(description="a script which takes argument for leave-out labels")
+    parser.add_argument('--leaveOut', type=int, required=True)
+    args = parser.parse_args()
+    return args.leaveOut
+
 if __name__ == "__main__":
+
     data = load_data()
     logger.info(f"Train dataset size: {len(data['train'])}")
     logger.info(f"Validation dataset size: {len(data['validation'])}")
@@ -191,4 +208,4 @@ if __name__ == "__main__":
     # tokenized_test = data_test.map(tokenize_and_align_labels, batched=True)
 
     # finetuning script
-    train(tokenized_train, tokenized_val)
+    # train(tokenized_train, tokenized_val)
