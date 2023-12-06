@@ -1,10 +1,15 @@
 from datasets import load_dataset
-from transformers import BertTokenizer, BertConfig, BertForTokenClassification
+from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer
 from rich.logging import RichHandler
 import logging
 from collections import Counter
 from torch import cuda
-
+import numpy as np
+import torch
+from torch.utils.data import Dataset, DataLoader
+import pdb
+from transformers import DataCollatorForTokenClassification
+import evaluate
 
 # Rich Handler for colorized logging, you can safely remove it
 logging.basicConfig(
@@ -20,26 +25,33 @@ logger = logging.getLogger(__name__)
 path = "/mount/studenten/arbeitsdaten-studenten1/razaai/cache"
 
 # label mappings
-mappings = {"O": 0, "B-PER": 1, "I-PER": 2, "B-ORG": 3, "I-ORG": 4, "B-LOC": 5, "I-LOC": 6, "B-ANIM": 7, "I-ANIM": 8,
+label2id = {"O": 0, "B-PER": 1, "I-PER": 2, "B-ORG": 3, "I-ORG": 4, "B-LOC": 5, "I-LOC": 6, "B-ANIM": 7, "I-ANIM": 8,
     "B-BIO": 9, "I-BIO": 10, "B-CEL": 11, "I-CEL": 12, "B-DIS": 13, "I-DIS": 14, "B-EVE": 15, "I-EVE": 16,
     "B-FOOD": 17, "I-FOOD": 18, "B-INST": 19, "I-INST": 20, "B-MEDIA": 21, "I-MEDIA": 22, "B-MYTH": 23,
     "I-MYTH": 24, "B-PLANT": 25, "I-PLANT": 26, "B-TIME": 27, "I-TIME": 28, "B-VEHI": 29, "I-VEHI": 30,
 }
+id2label = {v: k for k, v in label2id.items()}
 
 # check for GPU
 device = 'cuda' if cuda.is_available() else 'cpu'
 logger.info(f"Device: {device}")
 
 # load model and tokenizer
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir=path)
-model = BertForTokenClassification.from_pretrained('bert-base-uncased', cache_dir=path)
+# tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', cache_dir=path)
+# model = BertForTokenClassification.from_pretrained('bert-base-uncased', cache_dir=path)
+tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased', cache_dir=path)
+model = AutoModelForTokenClassification.from_pretrained(
+    "bert-base-uncased", num_labels=31, id2label=id2label, label2id=label2id, cache_dir=path
+)
+
+# Define DataCollator
+data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
+
+# load metric
+seqeval = evaluate.load("seqeval") 
 
 # define hyperparameters
 MAX_LEN = 128
-TRAIN_BATCH_SIZE = 8
-VALID_BATCH_SIZE = 4
-EPOCHS = 1
-LEARNING_RATE = 1e-05
 MAX_GRAD_NORM = 10
 
 def load_data(dataset_name=None):
@@ -64,45 +76,52 @@ def data_statistics(data):
         lst = sorted(lst, reverse=True)
         index = 0
         while lst[index] != 0:
-            tag = next((key for key, label in mappings.items() if label == lst[index]), None)
+            tag = next((key for key, label in label2id.items() if label == lst[index]), None)
             index+=1
             ner_tags_lst.append(tag)
     logger.info(f"Representation of each tag in the dataset: {Counter(ner_tags_lst)}")
 
-def tokenize_and_preserve_labels(sentence, text_labels, tokenizer):
-    """
-    Word piece tokenization makes it difficult to match word labels
-    back up with individual word pieces. This function tokenizes each
-    word one at a time so that it is easier to preserve the correct
-    label for each subword. It is, of course, a bit slower in processing
-    time, but it will help our model achieve higher accuracy.
-    """
+def tokenize_and_align_labels(examples):
+    tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True)
 
-    tokenized_sentence = []
     labels = []
+    for i, label in enumerate(examples[f"ner_tags"]):
+        word_ids = tokenized_inputs.word_ids(batch_index=i)  # Map tokens to their respective word.
+        previous_word_idx = None
+        label_ids = []
+        for word_idx in word_ids:  # Set the special tokens to -100.
+            if word_idx is None:
+                label_ids.append(-100)
+            elif word_idx != previous_word_idx:  # Only label the first token of a given word.
+                label_ids.append(label[word_idx])
+            else:
+                label_ids.append(-100)
+            previous_word_idx = word_idx
+        labels.append(label_ids)
 
-    sentence = sentence.strip()
+    tokenized_inputs["labels"] = labels
+    return tokenized_inputs
 
-    for word, label in zip(sentence, text_labels):
+def compute_metrics(p):
+    predictions, labels = p
+    predictions = np.argmax(predictions, axis=2)
 
-        # Tokenize the word and count # of subwords the word is broken into
-        tokenized_word = tokenizer.tokenize(word)
-        n_subwords = len(tokenized_word)
+    true_predictions = [
+        [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
+        for prediction, label in zip(predictions, labels)
+    ]
+    true_labels = [
+        [label_list[l] for (p, l) in zip(prediction, label) if l != -100]
+        for prediction, label in zip(predictions, labels)
+    ]
 
-        # Add the tokenized word to the final tokenized word list
-        tokenized_sentence.extend(tokenized_word)
-
-        # Add the same label to the new list of labels `n_subwords` times
-        labels.extend([label] * n_subwords)
-
-    return tokenized_sentence, labels
-
-def load_tokenizer():
-    # A funtion that loads the model & tokenizer from hugginface
-    try:
-        pass
-    except Exception as e:
-        print("failed to preprocess the data: %s" % (str(e)))
+    results = seqeval.compute(predictions=true_predictions, references=true_labels)
+    return {
+        "precision": results["overall_precision"],
+        "recall": results["overall_recall"],
+        "f1": results["overall_f1"],
+        "accuracy": results["overall_accuracy"],
+    }
 
 if __name__ == "__main__":
     data = load_data()
@@ -122,6 +141,5 @@ if __name__ == "__main__":
 
     # get to know data 
     data_statistics(data_train)
-    logger.info(f"This is how a single training example looks like: {data_train[0] }")
-    
+    logger.info(f"This is how a single training example looks like: {data_train[0]}")
 
