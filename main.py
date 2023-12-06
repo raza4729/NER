@@ -127,7 +127,8 @@ def tokenize_and_align_labels(examples):
 
 def compute_metrics(p):
     """ The function implements evaluation metrics for NER task which includes: 
-    Accuracy, F1-score, Precision, and Recall.
+    Accuracy, F1-score, Precision, and Recall. The ideal metric would be F1 score 
+    as sole accuracy could be misleading in case of class imbalance.
     The code is taken from Huggingface
     """
     predictions, labels = p
@@ -163,11 +164,11 @@ def train(tokenized_train, tokenized_val):
     )
 
     trainer.train()
-    # push the model o huggingface
-    trainer.push_to_hub()
+    # Please uncomment to push the model to huggingface
+    # trainer.push_to_hub()
 
 def parse_args():
-    # takes command-line argument for leave-out labels 
+    # takes command-line argument for leave-out labels whether to remove them or not
     parser = argparse.ArgumentParser(description="a script which takes argument for leave-out labels")
     parser.add_argument('--leaveOut', type=int, required=True)
     args = parser.parse_args()
@@ -178,7 +179,7 @@ if __name__ == "__main__":
     data = load_data()
     logger.info(f"Train dataset size: {len(data['train'])}")
     logger.info(f"Validation dataset size: {len(data['validation'])}")
-    logger.info(f"Test dataset size: {len(data['test'])}")
+    # logger.info(f"Test dataset size: {len(data['test'])}")
 
     # preprocessing 
     data_train = preprcossing(data['train'])
@@ -187,8 +188,8 @@ if __name__ == "__main__":
     data_val = preprcossing(data['validation'])
     logger.info(f"Validation dataset size after preprocessing: {data_val}")
 
-    data_test = preprcossing(data['test'])
-    logger.info(f"Test dataset size after preprocessing: {data_test}")
+    # data_test = preprcossing(data['test'])
+    # logger.info(f"Test dataset size after preprocessing: {data_test}")
 
     # get to know data 
     data_statistics(data_train)
@@ -201,15 +202,13 @@ if __name__ == "__main__":
     # remove lang column as we dont need it anymore 
     data_train =data_train.remove_columns("lang")
     data_val =data_val.remove_columns("lang")
-    data_test =data_test.remove_columns("lang")
+    # data_test =data_test.remove_columns("lang")
 
     logger.info(f"Training Dataset Shape: {data_train.shape}")
     logger.info(f"Validation Dataset Shape: {data_val.shape}")
-    logger.info(f"Test Dataset Shape: {data_test.shape}")
 
     tokenized_train = data_train.map(tokenize_and_align_labels, batched=True)
     tokenized_val = data_val.map(tokenize_and_align_labels, batched=True)
-    # tokenized_test = data_test.map(tokenize_and_align_labels, batched=True)
 
     # finetuning script
-    # train(tokenized_train, tokenized_val)
+    train(tokenized_train, tokenized_val)
