@@ -95,8 +95,8 @@ def turn_off_labels(labels=None):
     return revised_labels
 
 def tokenize_and_align_labels(examples):
-    # A function to tokenize the data in order to be accepted by model
-    # The code is taken from Hugginface and modified
+    """ A function to tokenize the data in order to be accepted by model
+    The code is taken from Hugginface and modified """
 
     # parse arguemnts
     leave_out_labels = parse_args() # yes or no
@@ -126,6 +126,10 @@ def tokenize_and_align_labels(examples):
     return tokenized_inputs
 
 def compute_metrics(p):
+    """ The function implements evaluation metrics for NER task which includes: 
+    Accuracy, F1-score, Precision, and Recall.
+    The code is taken from Huggingface
+    """
     predictions, labels = p
     predictions = np.argmax(predictions, axis=2)
 
