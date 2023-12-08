@@ -94,7 +94,7 @@ def tokenize_and_align_labels(examples):
             label = turn_off_labels(label)  
     
         word_ids = tokenized_inputs.word_ids(batch_index=i)  # Map tokens to their respective word.
-        # pdb.set_trace()
+        pdb.set_trace()
         previous_word_idx = None
         label_ids = []
         for word_idx in word_ids:  # Set the special tokens to -100.
@@ -191,4 +191,4 @@ if __name__ == "__main__":
     tokenized_val = data_val.map(tokenize_and_align_labels, batched=True)
 
     # finetuning script
-    train(tokenized_train, tokenized_val)
+    # train(tokenized_train, tokenized_val)
