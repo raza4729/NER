@@ -10,14 +10,18 @@ The script in the main.py is used to finetune the models and could be resued in 
 
 2. ```Install requirements.txt by running -> pip install -r requirements.txt```
 
-3. ```python main.py --leaveOut 1/0```
+3. ```python main.py --leaveOut 0```
 
-The `--leaveOut` arguemnt is intended to implement leave-out functionality for leaving out certain outcome labels which might lead to data imbalance or are considerend trivial depending on the requirments.
+The `--leaveOut` arguemnt is intended to implement leave-out functionality for skiping certain outcome labels which might lead to data imbalance or are considerend trivial depending on the requirments. Set it to 1 to leave them and 0 to finetune model with all labels.
 
 ## Remarks 
 
-The model that models all of the labels when evaluated solely using accuracy could be misleading due to class imbalance as in this case, the entities that are hyponyms would always be sparse as compared to general entities which is depicted by the accuracy of [Model A](https://huggingface.co/imrazaa/named-entity-recognition-distilbert-A) if we compare it with F1-score.
+The model that models all of the labels when evaluated solely using accuracy could be misleading due to class imbalance as in this case, the entities that are hyponyms would always be sparse as compared to general entities which is depicted by the accuracy of [Model A](https://huggingface.co/imrazaa/named-entity-recognition-distilbert-A) if we compare it with F1-score. The F1 score on both validation (dev) dataset and test dataset are reported below.
 
+| Model | Dev Data | Test Data |
+| ----- | -------- | --------- |
+| A     |  0.89    |           |
+| B     |  0.94    |           |
 
 
 ### Citation 
@@ -25,8 +29,8 @@ The model that models all of the labels when evaluated solely using accuracy cou
 ```
 @software{Ali_Raza,
     author = {Raza, Ali},
-    license = { BSD-2-Clause license},
-    title = {{Named Entity Recognition using Multinerd}},
+    license = {BSD-2-Clause license},
+    title = {Named Entity Recognition using Multinerd},
     url = {https://github.com/raza4729/NER}
 }
 ```
