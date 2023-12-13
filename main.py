@@ -65,7 +65,7 @@ def load_data(dataset_name=None):
     except Exception as e:
         print("failed to load the data: %s" % (str(e)))
 
-def preprcossing(data):
+def preprocessing(data):
     # A function that filters the data by remove non-English instances
     try:
         return data.filter(lambda example: example['lang'] == "en")
@@ -187,9 +187,6 @@ if __name__ == "__main__":
     data_val = preprcossing(data['validation'])
     logger.info(f"Validation dataset size after preprocessing: {data_val}")
 
-    # data_test = preprcossing(data['test'])
-    # logger.info(f"Test dataset size after preprocessing: {data_test}")
-
     # get to know data 
     data_statistics(data_train)
     logger.info(f"This is how a single training example looks like: {data_train[0]}")
@@ -201,7 +198,6 @@ if __name__ == "__main__":
     # remove lang column as we dont need it anymore 
     data_train =data_train.remove_columns("lang")
     data_val =data_val.remove_columns("lang")
-    # data_test =data_test.remove_columns("lang")
 
     logger.info(f"Training Dataset Shape: {data_train.shape}")
     logger.info(f"Validation Dataset Shape: {data_val.shape}")
