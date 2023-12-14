@@ -164,3 +164,6 @@ named-entity-recognition-multinerd
 named-entity-recognition-distilbert
 named-entity-recognition-distilbert-A
 named-entity-recognition-distilbert-B
+
+# Files
+evaluation_on_test.txt
