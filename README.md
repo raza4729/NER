@@ -17,9 +17,9 @@ The `--leaveOut` arguemnt is intended to implement leave-out functionality for s
 
 ## Remarks 
 
-The model that models all of the labels when evaluated solely using accuracy could be misleading due to class imbalance as in this case, the entities that are hyponyms would always be sparse as compared to general entities which is depicted by the accuracy of [Model A](https://huggingface.co/imrazaa/named-entity-recognition-distilbert-A) if we compare it with F1-score. The F1 score on both validation (dev) dataset and test dataset are reported below.
+The model that models all of the labels when evaluated solely using accuracy could be misleading due to class imbalance as in this case, the entities that are hyponyms would always be sparse as compared to general entities which is depicted by the accuracy of [Model A](https://huggingface.co/imrazaa/named-entity-recognition-distilbert-A) if we compare it with F1-score. The F1 score on both validation (dev) dataset and test dataset are reported below. 
 
-Additionaly, the model might improve as we experiment with different hyperparamethers as in this case all of them were kept constant across all experiments. 
+Additionaly, the model might improve as we experiment with different hyperparamethers as in this case all of them were kept constant across all experiments. Adding more to that, the model only accounts for token level entities for instance in case of `Aggregate` tokens such as `Paris` but not for `New York University` where these models might struggle, however this something we are hypothesizing as there was no qualitiative analysis report yet.
 
 | Model | Dev Data | Test Data |
 | ----- | -------- | --------- |
