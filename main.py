@@ -76,7 +76,7 @@ def data_statistics(data):
     # A funtion that provides statistics of NER tags e.g., representation of each class
     ner_tags_lst = []
     for lst in data['ner_tags']:
-        lst = sorted(lst, reverse=True) # revere it to decrease time-complexity
+        lst = sorted(lst, reverse=True) # revere it to optimize time-complexity
         index = 0
         while lst[index] != 0:
             tag = next((key for key, label in label2id.items() if label == lst[index]), None)
