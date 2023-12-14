@@ -181,10 +181,10 @@ if __name__ == "__main__":
     # logger.info(f"Test dataset size: {len(data['test'])}")
 
     # preprocessing 
-    data_train = preprcossing(data['train'])
+    data_train = preprocessing(data['train'])
     logger.info(f"Train dataset size after preprocessing: {data_train}")
 
-    data_val = preprcossing(data['validation'])
+    data_val = preprocessing(data['validation'])
     logger.info(f"Validation dataset size after preprocessing: {data_val}")
 
     # get to know data 
