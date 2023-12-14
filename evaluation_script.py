@@ -99,12 +99,13 @@ def predict(test_set, model_name):
 
         lst_predictions.append(predictions)
         lst_labels.append(true_labels)
+        
 
-    results = seqeval.compute(predictions=lst_predictions, references=lst_labels)
+    results = seqeval.compute(predictions=lst_predictions, references=lst_labels, zero_division=0)
     logger.info(f"Evaluation: {results}")
    
     f = open("evaluation_on_test.txt", "a")
-    f.write(str(config.model))
+    f.write(str(model_name))
     f.write("\n")
     f.write("precision: " + str(results["overall_precision"]))
     f.write("\n")
