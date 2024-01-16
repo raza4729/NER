@@ -13,7 +13,7 @@ The script in the main.py is used to finetune the models and could be resued in 
 
 3. ```python main.py --leaveOut 0```
 
-The `--leaveOut` arguemnt is intended to implement leave-out functionality for skiping certain outcome labels which might lead to data imbalance or are considerend trivial depending on the requirments. Set it to `1` to leave them and `0` to finetune model with all labels.
+The `--leaveOut` arguemnt is intended to implement leave-out functionality for skiping certain NER labels which might lead to data imbalance or are considerend trivial depending on the requirments. Set it to `1` to leave them and `0` to finetune model with all labels.
 
 ## Remarks 
 
@@ -21,7 +21,7 @@ The model that models all of the labels when evaluated solely using accuracy cou
 
 Additionaly, the model might improve as we experiment with different hyperparamethers as in this case all of them were kept constant across all experiments. Adding more to that, the model only accounts for token level entities for instance in case of `Aggregate` tokens such as `New York University` these models might struggle, however this is something we are hypothesizing as there is no qualitiative analysis report yet.
 
-| Model | Dev Data | Test Data |
+| Model | Validation Data | Test Data |
 | ----- | -------- | --------- |
 | A     |  0.89    |           |
 | B     |  0.94    |           |
