@@ -164,6 +164,14 @@ named-entity-recognition-multinerd
 named-entity-recognition-distilbert
 named-entity-recognition-distilbert-A
 named-entity-recognition-distilbert-B
+named-entity-recognition-distilbert-AAA
 
 # Files
 evaluation_on_test.txt
+
+# Folders
+figures
+loss
+
+# Scripts
+miscellaneous.py
