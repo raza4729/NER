@@ -6,6 +6,14 @@ from datasets import load_dataset
 from transformers import pipeline
 from torch import cuda
 import argparse
+import pdb
+import numpy as np
+import torch 
+from numpy import random
+from sklearn.metrics import accuracy_score
+from seqeval.metrics import classification_report
+# from nervaluate import Evaluator
+
 
 # load metric
 seqeval = evaluate.load("seqeval") 
@@ -54,7 +62,8 @@ def load_data(dataset_name=None):
     # A function that loads the data and returns its objects. 
     # Please add path in cache_dir where you want to store the dataset
     try:
-        return load_dataset("Babelscape/multinerd", cache_dir=config.path)
+        # return load_dataset("Babelscape/multinerd", cache_dir=config.path)
+        return load_dataset("conll2003", cache_dir=config.path)
     except Exception as e:
         print("failed to load the data: %s" % (str(e)))
 
@@ -64,16 +73,23 @@ def preprcossing(data):
         return data.filter(lambda example: example['lang'] == "en")
     except Exception as e:
         print("failed to preprocess the data: %s" % (str(e)))
+        return data
 
 def predict(test_set, model_name):
 
     logger.info(f"Test set: {test_set}")
     data_test = preprcossing(test_set)
     
-    data_test =data_test.remove_columns("lang")
-    logger.info(f"Test dataset size after preprocessing: {data_test}")
-    
-    lst_predictions = lst_labels = []
+    # Reduce dataset size for faster computation
+    # x = random.randint(len(data_test), size=(5000))
+    # data_test = data_test.select(x)
+
+    # data_test =data_test.remove_columns("lang")
+    logger.info(f"Test dataset after preprocessing: {data_test}")
+    logger.info(f"Model: {model_name}")
+
+    lst_predictions = []
+    lst_labels = []
     nlp = pipeline("ner", model=model_name)
 
     for instance in data_test:
@@ -83,38 +99,26 @@ def predict(test_set, model_name):
         # to switch unneccesary labels to O
         # labels = turn_off_labels(labels)
         
-        true_labels = [id2label[x] for x in labels]
+        true_labels = [id2label[x] for x in labels]        
         output = nlp(text)
-
-        predictions = []
         
+        predictions = []
+        previous = ""
         for token in instance['tokens']:
             switch = 0
             for d in output:
-                if token.lower() == d['word']:
+                if token.lower() == d['word'] and token != "." and token.lower() != previous:
                     predictions.append(d['entity'])
                     switch = 1
+                    previous = token.lower()
             if switch == 0:
                 predictions.append('O')
 
         lst_predictions.append(predictions)
         lst_labels.append(true_labels)
-        
-
-    results = seqeval.compute(predictions=lst_predictions, references=lst_labels, zero_division=0)
+    
+    results = seqeval.compute(predictions=lst_predictions, references=lst_labels)
     logger.info(f"Evaluation: {results}")
-   
-    f = open("evaluation_on_test.txt", "a")
-    f.write(str(model_name))
-    f.write("\n")
-    f.write("precision: " + str(results["overall_precision"]))
-    f.write("\n")
-    f.write("recall: " + str(results["overall_recall"]))
-    f.write("\n")
-    f.write("f1: " + str(results["overall_f1"]))
-    f.write("\n")
-    f.write("accuracy:" + str(results["overall_accuracy"]))
-    f.write("\n")
 
 def parse_args():
     # takes command-line argument for leave-out labels whether to remove them or not
